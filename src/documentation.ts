@@ -4,12 +4,6 @@
  * @copyright (C) 2021-2025 Luke Zhang
  */
 
-import type {
-    Documentation,
-    DocumentationClass,
-    DocumentationFunction,
-    DocumentationVariable,
-} from "./types"
 import documentation from "./documentation-data.yml"
 import vscode from "vscode"
 

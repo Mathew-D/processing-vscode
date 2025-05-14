@@ -9,7 +9,6 @@ import { shouldEnablePython } from "./config"
 
 class StatusBarManager {
     private processingStatusBarItem: vscode.StatusBarItem
-    private processingMode: 'java' | 'python' | undefined = undefined
     private disposables: vscode.Disposable[] = []
 
     constructor() {
@@ -47,8 +46,6 @@ class StatusBarManager {
     }
 
     private show(mode: 'java' | 'python'): void {
-        this.processingMode = mode
-        
         if (mode === 'java') {
             this.processingStatusBarItem.text = '$(play) Processing Java'
             this.processingStatusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
@@ -61,7 +58,6 @@ class StatusBarManager {
     }
 
     private hide(): void {
-        this.processingMode = undefined
         this.processingStatusBarItem.hide()
     }
 

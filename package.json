@@ -1,6 +1,6 @@
 {
   "name": "processing-vscode",
-  "version": "2.5.3",
+  "version": "2.5.4",
   "private": true,
   "description": "Processing Language Support for VSCode",
   "license": "MIT",
@@ -44,12 +44,6 @@
     "yaml": "^2.7.1"
   },
   "activationEvents": [
-    "onCommand:processing.OpenExtensionDocumentation",
-    "onCommand:processing.OpenDocs",
-    "onCommand:processing.SearchWebsite",
-    "onCommand:processing.Run",
-    "onCommand:processing.RunJava",
-    "onCommand:processing.RunPy",
     "onLanguage:pde",
     "onLanguage:python"
   ],
