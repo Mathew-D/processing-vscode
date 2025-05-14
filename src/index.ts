@@ -1,8 +1,8 @@
 /**
  * Processing-vscode - Processing Language Support for VSCode
  *
- * @version 2.5.0
- * @copyright (C) 2016 - 2020 Tobiah Zarlez, 2021 Luke Zhang
+ * @version 2.5.1
+ * @copyright (C) 2016 - 2020 Tobiah Zarlez, 2021 - 2025 Luke Zhang
  */
 
 import {processingCommand, shouldEnableDiagnostics} from "./config"

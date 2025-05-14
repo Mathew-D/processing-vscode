@@ -1,6 +1,6 @@
 {
   "name": "processing-vscode",
-  "version": "2.5.1",
+  "version": "2.5.2",
   "private": true,
   "description": "Processing Language Support for VSCode",
   "license": "MIT",
@@ -12,7 +12,7 @@
   "bugs": "https://github.com/Luke-zhang-04/processing-vscode/issues",
   "main": "./processing-vscode.js",
   "engines": {
-    "vscode": "^1.48.0"
+    "vscode": "^1.80.0"
   },
   "scripts": {
     "build": "node esbuild.config.js",
@@ -33,14 +33,14 @@
     "runner"
   ],
   "devDependencies": {
-    "@types/node": "^16.3.1",
-    "@types/vscode": "^1.48.0",
-    "@vscode/vsce": "^2.22.0",
-    "esbuild": "^0.19.8",
-    "eslint": "^8.54.0",
-    "prettier": "^3.1.0",
-    "typescript": "^5.3.2",
-    "yaml": "^2.3.4"
+    "@types/node": "^22.15.18",
+    "@types/vscode": "^1.80.0",
+    "@vscode/vsce": "^3.3.2",
+    "esbuild": "^0.25.4",
+    "eslint": "^9.26.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.3",
+    "yaml": "^2.7.1"
   },
   "activationEvents": [
     "onCommand:processing.OpenExtensionDocumentation",
@@ -156,12 +156,6 @@
           "type": "string",
           "default": "processing-java",
           "description": "Path to Processing. Leave default if you've added processing to your path, otherwise enter the path to `processing-java` here. Example: `/usr/bin/processing-java` for Unix, or `C:\\Program Files\\processing-3.0.1\\processing-java` for Windows."
-        },
-        "processing.path": {
-          "type": "string",
-          "default": "processing-java",
-          "description": "Legacy path to Processing. Use processing.processingPath instead. If processing.processingPath is available, it will be used",
-          "deprecationMessage": "Legacy path to Processing. Use processing.processingPath instead. If processing.processingPath is available, it will be used"
         },
         "processing.docs": {
           "type": "string",

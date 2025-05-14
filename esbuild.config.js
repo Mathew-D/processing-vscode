@@ -13,6 +13,8 @@ require('esbuild').build({
   external: ['vscode'],
   format: 'cjs',
   platform: 'node',
+  target: 'es2022',
+  sourcemap: true,
   plugins: [
     {
       name: 'yaml-loader',

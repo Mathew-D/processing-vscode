@@ -1,7 +1,7 @@
 /**
  * Processing-vscode - Processing Language Support for VSCode
  *
- * @copyright (C) 2021 Luke Zhang
+ * @copyright (C) 2021-2025 Luke Zhang
  */
 
 import path, {dirname} from "path"
@@ -101,7 +101,9 @@ const refreshDiagnostics = async (
 
             diagnostics.set(doc.uri, foundDiagnostics)
         }
-    } catch (_) {}
+    } catch (error) {
+        log.appendLine(`Error in refreshDiagnostics: ${error instanceof Error ? error.message : String(error)}`)
+    }
 }
 
 export const subscribeDiagnostics = (

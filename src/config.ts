@@ -1,77 +1,59 @@
 /**
  * Processing-vscode - Processing Language Support for VSCode
  *
- * @copyright (C) 2021 Luke Zhang
+ * @copyright (C) 2021-2025 Luke Zhang
  */
 
 import vscode from "vscode"
 
+/**
+ * Helper function to get config values with proper type checking
+ */
+function getConfigValue<T>(
+    key: string, 
+    defaultValue: T, 
+    expectedType: string
+): T {
+    const config = vscode.workspace.getConfiguration().get<unknown>(key, defaultValue)
+    
+    if (typeof config !== expectedType) {
+        const msg = `Config option ${key} must be of type ${expectedType}`
+        vscode.window.showErrorMessage(msg)
+        return defaultValue
+    }
+    
+    return config as T
+}
+
 const getProcessingCommand = (): string => {
     // Look for processing.processingPath, then processing.path, then default to processing-java
-    const config = vscode.workspace
-        .getConfiguration()
-        .get<unknown>(
-            "processing.processingPath",
-            vscode.workspace.getConfiguration().get<unknown>("processing.path", "processing-java"),
-        )
-
-    if (typeof config !== "string") {
-        const msg = "Config option processing.processingPath must be of type string"
-
-        vscode.window.showErrorMessage(msg)
-
-        return "processing-java"
+    const processingPath = vscode.workspace.getConfiguration().get<unknown>("processing.processingPath")
+    const legacyPath = vscode.workspace.getConfiguration().get<unknown>("processing.path")
+    
+    // If processingPath is defined and a string, use it
+    if (processingPath !== undefined && typeof processingPath === "string") {
+        return processingPath
     }
-
-    return config
+    
+    // If legacyPath is defined and a string, use it
+    if (legacyPath !== undefined && typeof legacyPath === "string") {
+        return legacyPath
+    }
+    
+    // Default to processing-java
+    return "processing-java"
 }
 
 const getJavaCommand = (): string => {
-    const config = vscode.workspace
-        .getConfiguration()
-        .get<unknown>("processing.py.javaPath", "java")
-
-    if (typeof config !== "string") {
-        const msg = "Config option processing.py.javaPath must be of type string"
-
-        vscode.window.showErrorMessage(msg)
-
-        return "java"
-    }
-
-    return config
+    return getConfigValue<string>("processing.py.javaPath", "java", "string")
 }
 
 const getJarPath = (): string => {
-    const config = vscode.workspace
-        .getConfiguration()
-        .get<unknown>("processing.py.jarPath", "processing-py.jar")
-
-    if (typeof config !== "string") {
-        const msg = "Config option processing.py.jarPath must be of type string"
-
-        vscode.window.showErrorMessage(msg)
-
-        return "processing-py.jar"
-    }
-
-    return config
+    return getConfigValue<string>("processing.py.jarPath", "processing-py.jar", "string")
 }
 
 const getShouldEnablePython = (): boolean => {
-    const isEnabled = vscode.workspace
-        .getConfiguration()
-        .get<boolean>("processing.py.isEnabled", true)
-
-    if (typeof isEnabled !== "boolean") {
-        const msg = "Config option processing.py.isEnabled should be a boolean"
-
-        vscode.window.showErrorMessage(msg)
-
-        return true
-    }
-
-    return isEnabled
+    return getConfigValue<boolean>("processing.py.isEnabled", true, "boolean")
 }
 
 type SearchEngines = "Google" | "DuckDuckGo"
@@ -103,20 +85,8 @@ const getSearchConfig = (): {searchEngine: SearchEngines; processingDocs: DocOpt
     }
 }
 
-const getshouldEnableDiagnostics = (): boolean => {
-    const shouldGiveDiagnostics = vscode.workspace
-        .getConfiguration()
-        .get<boolean>("processing.shouldGiveDiagnostics", true)
-
-    if (typeof shouldGiveDiagnostics !== "boolean") {
-        const msg = "Config option processing.shouldGiveDiagnostics must be of type boolean"
-
-        vscode.window.showErrorMessage(msg)
-
-        return true
-    }
-
-    return shouldGiveDiagnostics
+const getShouldEnableDiagnostics = (): boolean => {
+    return getConfigValue<boolean>("processing.shouldGiveDiagnostics", true, "boolean")
 }
 
 const getQuoteEnablement = (): boolean => {
@@ -136,19 +106,7 @@ const getQuoteEnablement = (): boolean => {
 }
 
 const getShouldSendSigint = (): boolean => {
-    const isEnabled = vscode.workspace
-        .getConfiguration()
-        .get<boolean>("processing.shouldSendSigint", false)
-
-    if (typeof isEnabled !== "boolean") {
-        const msg = "Config option processing.shouldSendSigint must be of type boolean"
-
-        vscode.window.showErrorMessage(msg)
-
-        throw new Error(msg)
-    }
-
-    return isEnabled
+    return getConfigValue<boolean>("processing.shouldSendSigint", false, "boolean")
 }
 
 export let processingCommand = getProcessingCommand()
@@ -156,7 +114,7 @@ export let javaCommand = getJavaCommand()
 export let jarPath = getJarPath()
 export let shouldEnablePython = getShouldEnablePython()
 export let searchConfig = getSearchConfig()
-export let shouldEnableDiagnostics = getshouldEnableDiagnostics()
+export let shouldEnableDiagnostics = getShouldEnableDiagnostics()
 export let shouldAlwaysQuotePath = getQuoteEnablement()
 export let shouldSendSigint = getShouldSendSigint()
 
@@ -166,7 +124,7 @@ vscode.workspace.onDidChangeConfiguration(() => {
     jarPath = getJarPath()
     shouldEnablePython = getShouldEnablePython()
     searchConfig = getSearchConfig()
-    shouldEnableDiagnostics = getshouldEnableDiagnostics()
+    shouldEnableDiagnostics = getShouldEnableDiagnostics()
     shouldAlwaysQuotePath = getQuoteEnablement()
     shouldSendSigint = getShouldSendSigint()
 })
