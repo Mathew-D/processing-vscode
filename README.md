@@ -142,5 +142,13 @@ This extension attempts to make Processing with Python easier to use. Follow the
 
 ## Development
 
--   Run `yarn vsce package`
--   Run `code --install-extension processing-vscode-<VERSION>.vsix`
+To build and test this extension locally:
+
+- Run `npm run build` to build the extension
+- Run `npm run package` to build and package the extension into a .vsix file
+- Install the extension with `code --install-extension processing-vscode-<VERSION>.vsix`
+
+Additional commands:
+- `npm run format` - Format code with Prettier
+- `npm run lint` - Lint TypeScript code
+- `npm run deploy` - Publish the extension (for maintainers)
