@@ -35,11 +35,26 @@ const ensureProcessingCli = (command: string): string => {
     if (command.includes("processing")) {
         // Handle paths with quotes
         if (command.includes('"')) {
-            // For paths like "/path/to/processing" or "C:\path\to\processing"
-            return command.replace(/"([^"]*processing)("?)/, '"$1 cli$2');
+            // Check if it's a path ending with "processing"
+            if (command.match(/"([^"]*\/processing)("?)/)) {
+                // For paths like "/path/to/processing" or "C:\path\to\processing"
+                return command.replace(/"([^"]*\/processing)("?)/, '"$1 cli$2');
+            }
+            // If it doesn't end with /processing, it might be a path with /processing/ in it
+            // In this case, we shouldn't add 'cli'
+            return command;
         }
+        
         // For paths without quotes
-        return command.replace(/(\S*processing)(\s|$)/, '$1 cli$2');
+        // Only add 'cli' if the command ends with 'processing' or is separated by space
+        if (command.endsWith("/processing") || command.match(/\/processing\s/)) {
+            return command.replace(/\/processing(\s|$)/, '/processing cli$1');
+        }
+        
+        // For simple commands like 'processing' with arguments
+        if (command.match(/^processing(\s|$)/)) {
+            return command.replace(/^processing(\s|$)/, 'processing cli$1');
+        }
     }
     
     // Default case: return the original command
