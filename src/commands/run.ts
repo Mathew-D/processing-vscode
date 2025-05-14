@@ -320,11 +320,17 @@ class RunManager {
         const processCommand = ensureProcessingCli(processingCommand);
 
         // If file is a processing project file
-        const cmd = `${
-            hasTerminal && shouldSendSigint ? "\x03" : ""
-        }${processCommand} --sketch=${sketchName} --run`
-
-        currentTerminal.sendText(cmd)
+        if (hasTerminal && shouldSendSigint) {
+            // First send SIGINT to stop any running process
+            currentTerminal.sendText("\x03", false);
+            // Then send the command separately after a small delay
+            const execCommand = `${processCommand} --sketch=${sketchName} --run`;
+            // Use a separate command to execute the command after SIGINT
+            currentTerminal.sendText(execCommand, true);
+        } else {
+            // No need to stop a running process, send the command directly
+            currentTerminal.sendText(`${processCommand} --sketch=${sketchName} --run`);
+        }
     }
 
     /**
@@ -341,13 +347,21 @@ class RunManager {
         currentTerminal.show()
 
         // If file is a processing project file
-        const cmd = `${
-            hasTerminal && shouldSendSigint ? "\x03" : ""
-        }${javaCommand} -jar ${pythonUtils.getJarFilename()} ${pythonUtils.getProjectFilename(
-            editor.document,
-        )}`
-
-        currentTerminal.sendText(cmd)
+        if (hasTerminal && shouldSendSigint) {
+            // First send SIGINT to stop any running process
+            currentTerminal.sendText("\x03", false);
+            // Then send the command separately
+            const execCommand = `${javaCommand} -jar ${pythonUtils.getJarFilename()} ${pythonUtils.getProjectFilename(
+                editor.document,
+            )}`;
+            // Use a separate command to execute the command after SIGINT
+            currentTerminal.sendText(execCommand, true);
+        } else {
+            // No need to stop a running process, send the command directly
+            currentTerminal.sendText(`${javaCommand} -jar ${pythonUtils.getJarFilename()} ${pythonUtils.getProjectFilename(
+                editor.document,
+            )}`);
+        }
     }
 }
 
