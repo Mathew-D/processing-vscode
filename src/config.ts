@@ -6,6 +6,22 @@
 
 import vscode from "vscode"
 
+// Define configuration types for better type safety
+export interface ProcessingConfig {
+    processingPath: string;
+    path?: string; // Legacy support
+    py: {
+        javaPath: string;
+        jarPath: string;
+        isEnabled: boolean;
+    };
+    docs: "processing.org" | "p5js.org" | "py.processing.org" | "auto";
+    search: "Google" | "DuckDuckGo";
+    shouldGiveDiagnostics: boolean;
+    runPathQuotes: "auto" | "always";
+    shouldSendSigint: boolean;
+}
+
 /**
  * Helper function to get config values with proper type checking
  */

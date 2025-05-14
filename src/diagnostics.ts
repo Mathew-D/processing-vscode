@@ -12,6 +12,9 @@ import {processingCommand} from "./config"
 import vscode from "vscode"
 
 let oldHash = ""
+// Add a debounce interval to prevent excessive diagnostic runs
+const DIAGNOSTIC_DEBOUNCE_MS = 1000
+let diagnosticTimeout: NodeJS.Timeout | null = null
 
 const hash = (content: {toString: () => string}) =>
     crypto.createHash("sha384").update(content.toString()).digest("hex")
@@ -31,12 +34,23 @@ const createDiagnostic = (
     return diagnostic
 }
 
+// Add a timeout promise to prevent diagnostics from hanging
+const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> => {
+    const timeout = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error(errorMessage)), timeoutMs);
+    });
+    return Promise.race([promise, timeout]);
+};
+
 const refreshDiagnostics = async (
     diagnostics: vscode.DiagnosticCollection,
     doc: vscode.TextDocument,
     log: vscode.OutputChannel,
 ): Promise<void> => {
     try {
+        // Clear existing diagnostics first
+        diagnostics.delete(doc.uri);
+        
         const foundDiagnostics: vscode.Diagnostic[] = []
         let sketchName = doc.fileName.includes(".pde") ? dirname(doc.fileName) : undefined
 
@@ -52,29 +66,33 @@ const refreshDiagnostics = async (
             }
 
             console.log({sketchName})
-            const diagnostic = await new Promise<string[]>((resolve) => {
-                const processingProcess = childProcess.spawn(processingCommand, [
-                    `--sketch=${sketchName}`,
-                    "--build",
-                ])
+            const diagnostic = await withTimeout(
+                new Promise<string[]>((resolve) => {
+                    const processingProcess = childProcess.spawn(processingCommand, [
+                        `--sketch=${sketchName}`,
+                        "--build",
+                    ])
 
-                const problems: string[] = []
+                    const problems: string[] = []
 
-                const handleOutput = (data: Buffer): void => {
-                    for (const line of data.toString().split("\n")) {
-                        if (/(:[0-9]+){4}:/gu.test(line)) {
-                            problems.push(line)
+                    const handleOutput = (data: Buffer): void => {
+                        for (const line of data.toString().split("\n")) {
+                            if (/(:[0-9]+){4}:/gu.test(line)) {
+                                problems.push(line)
+                            }
                         }
                     }
-                }
 
-                processingProcess.stderr.on("data", handleOutput)
-                processingProcess.stdout.on("data", handleOutput)
+                    processingProcess.stderr.on("data", handleOutput)
+                    processingProcess.stdout.on("data", handleOutput)
 
-                processingProcess.on("exit", () => {
-                    resolve(problems)
-                })
-            }).catch(() => undefined)
+                    processingProcess.on("exit", () => {
+                        resolve(problems)
+                    })
+                }),
+                5000,
+                "Processing diagnostics timed out"
+            ).catch(() => undefined)
 
             if (!diagnostic) {
                 return
@@ -117,34 +135,40 @@ export const subscribeDiagnostics = (
     const runDiagnostics = async (
         editor: vscode.TextEditor | vscode.TextDocumentChangeEvent,
     ): Promise<void> => {
-        if (isRunning) {
-            shouldRunAgain = true
-        } else {
-            isRunning = true
+        if (diagnosticTimeout) {
+            clearTimeout(diagnosticTimeout)
+        }
 
-            oldHash = `${editor.document.fileName} = ${hash(editor.document.getText())}`
+        diagnosticTimeout = setTimeout(async () => {
+            if (isRunning) {
+                shouldRunAgain = true
+            } else {
+                isRunning = true
 
-            await refreshDiagnostics(diagnostics, editor.document, log)
-
-            let newHash = `${editor.document.fileName} = ${hash(editor.document.getText())}`
-
-            while (shouldRunAgain || oldHash !== newHash) {
-                shouldRunAgain = false
-                oldHash = newHash
+                oldHash = `${editor.document.fileName} = ${hash(editor.document.getText())}`
 
                 await refreshDiagnostics(diagnostics, editor.document, log)
 
-                newHash = `${editor.document.fileName} = ${hash(editor.document.getText())}`
+                let newHash = `${editor.document.fileName} = ${hash(editor.document.getText())}`
 
-                if (!shouldRunAgain || oldHash === newHash) {
-                    break
+                while (shouldRunAgain || oldHash !== newHash) {
+                    shouldRunAgain = false
+                    oldHash = newHash
+
+                    await refreshDiagnostics(diagnostics, editor.document, log)
+
+                    newHash = `${editor.document.fileName} = ${hash(editor.document.getText())}`
+
+                    if (!shouldRunAgain || oldHash === newHash) {
+                        break
+                    }
                 }
+
+                await refreshDiagnostics(diagnostics, editor.document, log)
+
+                isRunning = false
             }
-
-            await refreshDiagnostics(diagnostics, editor.document, log)
-
-            isRunning = false
-        }
+        }, DIAGNOSTIC_DEBOUNCE_MS)
     }
 
     if (vscode.window.activeTextEditor) {

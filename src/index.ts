@@ -1,7 +1,7 @@
 /**
  * Processing-vscode - Processing Language Support for VSCode
  *
- * @version 2.5.1
+ * @version 2.5.3
  * @copyright (C) 2016 - 2020 Tobiah Zarlez, 2021 - 2025 Luke Zhang
  */
 
@@ -10,11 +10,21 @@ import isValidProcessingCommand from "./validateCommand"
 import subscribeCommands from "./commands"
 import subscribeDiagnostics from "./diagnostics"
 import vscode from "vscode"
+import { disposeRunManager } from "./commands/run"
+import { statusBarManager } from "./statusBar"
+
+// Store disposables for cleanup on deactivation
+const disposables: vscode.Disposable[] = []
 
 export const activate = async (context: vscode.ExtensionContext) => {
     const log = vscode.window.createOutputChannel("Processing")
+    disposables.push(log)
 
     log.appendLine("Activating Processing language extension...")
+    
+    // Initialize status bar
+    statusBarManager.initialize();
+    disposables.push(statusBarManager);
 
     subscribeCommands(context)
 
@@ -37,5 +47,15 @@ export const activate = async (context: vscode.ExtensionContext) => {
     log.appendLine("Processing language extension is now active!")
 }
 
-// this method is called when your extension is deactivated
-export const deactivate = () => {}
+// This method is called when your extension is deactivated
+export const deactivate = () => {
+    // Clean up all disposables
+    disposeRunManager();
+    disposables.forEach(disposable => {
+        try {
+            disposable.dispose();
+        } catch (error) {
+            console.error('Error disposing resource:', error);
+        }
+    });
+}

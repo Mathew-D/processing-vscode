@@ -1,7 +1,7 @@
 /**
  * Processing-vscode - Processing Language Support for VSCode
  *
- * @copyright (C) 2016 - 2020 Tobiah Zarlez, 2021 Luke Zhang
+ * @copyright (C) 2016 - 2020 Tobiah Zarlez, 2021-2025 Luke Zhang
  */
 
 import {search} from "../utils"

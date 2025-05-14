@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.3] - 2025-05-14
+
+### Added
+
+- Added status bar indicator to show current Processing mode (Java/Python)
+- Added improved command validation with user-friendly error messages
+- Added automatic dependency installation via prebuild script
+- Added document auto-save before running sketches
+
+### Changed
+
+- Improved error handling in diagnostics with timeout prevention
+- Enhanced YAML file handling in build process
+- Improved documentation provider with caching for better performance
+- Added proper resource cleanup on extension deactivation
+- Updated README with comprehensive configuration options
+
 ## [2.4.0] - 2021-07-10
 
 ### Added

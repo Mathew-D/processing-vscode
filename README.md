@@ -18,7 +18,9 @@ Note on Processing 4: I'm not sure how this extension will handle Processing 4. 
     -   [Syntax Highlighting](#syntax-highlighting)
     -   [Snippets](#snippets)
     -   [Documentation on Hover](#documentation-on-hover)
+    -   [Status Bar Indicator](#status-bar-indicator)
     -   [Commands](#commands)
+-   [Configuration Options](#configuration-options)
 -   [Using task files](#using-task-files)
 -   [Processing Python](#processing-python)
 -   [Credits](#credits)
@@ -71,6 +73,10 @@ Once the language has been set, you will see code snippets pop up automatically 
 
 When you hover over a function such as `square`, documentation for this function will appear! Documentation is scraped directly from the [Processing reference page](https://processing.org/reference/), so anything missing from there will be missing here too.
 
+### Status Bar Indicator
+
+A status bar indicator shows the current Processing mode (Java or Python) and provides a quick way to run your sketch. The indicator displays in the bottom right of your VS Code window whenever you're working with Processing files.
+
 ### Commands
 
 Installing this extension will add the following commands to your command pallette (`CTRL+SHIFT+P`, or opened by `View -> Command Pallette`). These commands can be selected and run from there, to complete the corresponding tasks.
@@ -90,6 +96,20 @@ Installing this extension will add the following commands to your command pallet
 -   Search Processing Website
     -   Use the pallet command "Processing: Search Processing Website" to quickly search whatever you want on the processing website.
     -   By default uses Google for search. Can change to DuckDuckGo if preferred using the `processing.search` setting.
+
+## Configuration Options
+
+This extension provides several configuration options that you can customize in your VS Code settings:
+
+- `processing.processingPath`: Path to Processing. Leave default if you've added processing to your path, otherwise enter the path to `processing-java`.
+- `processing.docs`: Which documentation to use. Options: "processing.org", "p5js.org", "py.processing.org", or "auto".
+- `processing.search`: Search engine to use. Options: "Google" or "DuckDuckGo".
+- `processing.shouldGiveDiagnostics`: Whether to provide diagnostics (via processing-java). Disabled by default as it can be slow.
+- `processing.shouldSendSigint`: Whether to send interrupt signal to stop the current running process before starting a new one.
+- `processing.runPathQuotes`: When to quote the run path. Options: "auto" or "always".
+- `processing.py.jarPath`: Location of the processing-py.jar file.
+- `processing.py.javaPath`: Path to Java executable.
+- `processing.py.isEnabled`: Whether processing.py features should be enabled.
 
 ## Using Task Files
 
