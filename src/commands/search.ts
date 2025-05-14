@@ -56,7 +56,7 @@ export const openProcessingDocs = (textEditor: vscode.TextEditor) => {
     )
 }
 
-export const searchUnityDocs = () => {
+export const searchProcessingDocs = () => {
     vscode.window
         .showInputBox({
             prompt: "Search Processing Website:",

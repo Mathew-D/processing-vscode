@@ -4,7 +4,7 @@
  * @copyright (C) 2021 Luke Zhang
  */
 
-import {openDocumentation, openProcessingDocs, searchUnityDocs} from "./search"
+import {openDocumentation, openProcessingDocs, searchProcessingDocs} from "./search"
 import {run as runProject} from "./run"
 import {shouldEnablePython} from "../config"
 import vscode from "vscode"
@@ -35,7 +35,7 @@ export const subscribeCommands = (context: vscode.ExtensionContext): void => {
     )
 
     context.subscriptions.push(
-        vscode.commands.registerCommand("processing.SearchWebsite", searchUnityDocs),
+        vscode.commands.registerCommand("processing.SearchWebsite", searchProcessingDocs),
     )
 }
 
