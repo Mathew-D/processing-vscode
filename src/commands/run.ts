@@ -15,158 +15,106 @@ import path, {dirname} from "path"
 import {isValidProcessingProject} from "../utils"
 import vscode from "vscode"
 
-/**
- * Ensures the processing command includes the 'cli' part
- * @param command - The processing command from config
- * @returns The command with 'cli' appended if needed
- */
-const ensureProcessingCli = (command: string): string => {
-    // If the command is just "processing", append " cli"
-    if (command === "processing") {
-        return "processing cli";
-    }
-    
-    // If the command already contains "processing cli", return as is
-    if (command.includes("processing cli")) {
-        return command;
-    }
-    
-    // If it contains "processing" but not "cli", try to insert "cli" after "processing"
-    if (command.includes("processing")) {
-        // Handle paths with quotes
-        if (command.includes('"')) {
-            // Check if it's a path ending with "processing"
-            if (command.match(/"([^"]*\/processing)("?)/)) {
-                // For paths like "/path/to/processing" or "C:\path\to\processing"
-                return command.replace(/"([^"]*\/processing)("?)/, '"$1 cli$2');
-            }
-            // If it doesn't end with /processing, it might be a path with /processing/ in it
-            // In this case, we shouldn't add 'cli'
-            return command;
-        }
-        
-        // For paths without quotes
-        // Only add 'cli' if the command ends with 'processing' or is separated by space
-        if (command.endsWith("/processing") || command.match(/\/processing\s/)) {
-            return command.replace(/\/processing(\s|$)/, '/processing cli$1');
-        }
-        
-        // For simple commands like 'processing' with arguments
-        if (command.match(/^processing(\s|$)/)) {
-            return command.replace(/^processing(\s|$)/, 'processing cli$1');
-        }
-    }
-    
-    // Default case: return the original command
-    return command;
-}
-
 // Helper function to validate required tools with user-friendly error messages
 const validateTool = async (command: string, toolName: string, configField: string): Promise<boolean> => {
     try {
-        // Ensure the command includes "processing cli"
-        const validatedCommand = ensureProcessingCli(command);
+        // We'll validate the command by appending 'cli --help' for Processing
+        // or just '--help' for other commands like Java
+        const isProcessing = toolName === "Processing";
         
-        // Check if the command contains "processing cli" anywhere in it
-        // This handles cases like "/path/to/processing cli" or "processing cli"
-        const isProcessingCli = validatedCommand.includes("processing") && validatedCommand.includes("cli");
+        // Handle spaces in the command path
+        const baseCommand = / |\\/u.test(command) && !command.includes('"') 
+            ? `"${command}"` 
+            : command;
+            
+        const validatedCommand = isProcessing ? `${baseCommand} cli` : baseCommand;
         
         await vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
             title: `Checking for ${toolName}...`,
             cancellable: false
         }, async () => {
-            // Different handling for "processing cli" vs other commands
-            if (isProcessingCli) {
-                // For "processing cli", it's likely to be a special case or alias
-                // Instead of validating, just trust it works
-                return Promise.resolve();
-            } else {
-                // For regular commands, try to validate
-                // Since we might have spaces in the path (not just in the arguments),
-                // we need to be careful about how we handle command splitting
-                let cmd;
-                let args;
-                
-                if (validatedCommand.includes(' ')) {
-                    // We need to be careful with paths that contain spaces
-                    // If the command path has quotes, honor them
-                    if (validatedCommand.includes('"')) {
-                        const match = validatedCommand.match(/"([^"]+)"\s+(.*)/);
-                        if (match) {
-                            cmd = match[1]; // The part in quotes
-                            args = (match[2] || '').split(' ').concat(['--help']);
-                        } else {
-                            // Fallback to simple split if quote parsing fails
-                            const parts = validatedCommand.split(' ');
-                            cmd = parts[0];
-                            args = parts.slice(1).concat(['--help']);
-                        }
+            let cmd;
+            let args;
+            
+            if (validatedCommand.includes(' ')) {
+                // We need to be careful with paths that contain spaces
+                // If the command path has quotes, honor them
+                if (validatedCommand.includes('"')) {
+                    const match = validatedCommand.match(/"([^"]+)"\s+(.*)/);
+                    if (match) {
+                        cmd = match[1]; // The part in quotes
+                        args = (match[2] || '').split(' ').concat(['--help']);
                     } else {
-                        // Simple space-separated command
+                        // Fallback to simple split if quote parsing fails
                         const parts = validatedCommand.split(' ');
                         cmd = parts[0];
                         args = parts.slice(1).concat(['--help']);
                     }
                 } else {
-                    // No spaces, simple command
-                    cmd = validatedCommand;
-                    args = ['--help'];
+                    // Simple space-separated command
+                    const parts = validatedCommand.split(' ');
+                    cmd = parts[0];
+                    args = parts.slice(1).concat(['--help']);
                 }
-                
-                const childProcess = require('child_process');
-                const proc = childProcess.spawn(cmd, args, {
-                    shell: true, // Use shell for better cross-platform compatibility
-                });
-                
-                return new Promise<void>((resolve, reject) => {
-                    proc.on('error', (err: Error) => {
-                        console.error(`Error validating tool: ${err.message}`);
-                        reject(err);
-                    });
-                    
-                    // Listen for some output to validate command works
-                    let output = '';
-                    proc.stdout.on('data', (data: Buffer) => {
-                        output += data.toString();
-                        // If we get any output, consider it a success
-                        if (output.length > 0) {
-                            resolve();
-                        }
-                    });
-                    
-                    proc.stderr.on('data', (data: Buffer) => {
-                        output += data.toString();
-                        // Even stderr can be valid for processing help output
-                        if (output.includes('processing') || output.includes('Usage')) {
-                            resolve();
-                        }
-                    });
-                    
-                    proc.on('exit', (code: number) => {
-                        // Consider any output a success even with non-zero exit code
-                        // as --help might return non-zero but still be valid
-                        if (output.length > 0) {
-                            resolve();
-                        } else if (code !== 0) {
-                            reject(new Error(`Process exited with code ${code}`));
-                        } else {
-                            resolve();
-                        }
-                    });
-                    
-                    // Only wait a short time to check if the process starts
-                    setTimeout(() => {
-                        if (output.length > 0) {
-                            resolve();
-                        } else {
-                            // Give it a chance - don't reject immediately
-                            // This helps with slow-starting processes
-                            resolve();
-                        }
-                    }, 1000);
-                });
+            } else {
+                // No spaces, simple command
+                cmd = validatedCommand;
+                args = ['--help'];
             }
+                
+            const childProcess = require('child_process');
+            const proc = childProcess.spawn(cmd, args, {
+                shell: true, // Use shell for better cross-platform compatibility
+            });
+            
+            return new Promise<void>((resolve, reject) => {
+                proc.on('error', (err: Error) => {
+                    console.error(`Error validating tool: ${err.message}`);
+                    reject(err);
+                });
+                
+                // Listen for some output to validate command works
+                let output = '';
+                proc.stdout.on('data', (data: Buffer) => {
+                    output += data.toString();
+                    // If we get any output, consider it a success
+                    if (output.length > 0) {
+                        resolve();
+                    }
+                });
+                
+                proc.stderr.on('data', (data: Buffer) => {
+                    output += data.toString();
+                    // Even stderr can be valid for processing help output
+                    if (output.includes('processing') || output.includes('Usage')) {
+                        resolve();
+                    }
+                });
+                
+                proc.on('exit', (code: number) => {
+                    // Consider any output a success even with non-zero exit code
+                    // as --help might return non-zero but still be valid
+                    if (output.length > 0) {
+                        resolve();
+                    } else if (code !== 0) {
+                        reject(new Error(`Process exited with code ${code}`));
+                    } else {
+                        resolve();
+                    }
+                });
+                
+                // Only wait a short time to check if the process starts
+                setTimeout(() => {
+                    if (output.length > 0) {
+                        resolve();
+                    } else {
+                        // Give it a chance - don't reject immediately
+                        // This helps with slow-starting processes
+                        resolve();
+                    }
+                }, 1000);
+            });
         });
         
         return true;
@@ -316,20 +264,22 @@ class RunManager {
             )
         }
 
-        // Ensure the processing command includes 'cli'
-        const processCommand = ensureProcessingCli(processingCommand);
-
+        // Make sure the processing command is properly quoted if it contains spaces
+        const processCmd = / |\\/u.test(processingCommand) && !processingCommand.includes('"') 
+            ? `"${processingCommand}"` 
+            : processingCommand;
+        
         // If file is a processing project file
         if (hasTerminal && shouldSendSigint) {
             // First send SIGINT to stop any running process
             currentTerminal.sendText("\x03", false);
-            // Then send the command separately after a small delay
-            const execCommand = `${processCommand} --sketch=${sketchName} --run`;
+            // Then send the command separately with 'cli' added before --sketch
+            const execCommand = `${processCmd} cli --sketch=${sketchName} --run`;
             // Use a separate command to execute the command after SIGINT
             currentTerminal.sendText(execCommand, true);
         } else {
-            // No need to stop a running process, send the command directly
-            currentTerminal.sendText(`${processCommand} --sketch=${sketchName} --run`);
+            // No need to stop a running process, send the command directly with 'cli' added
+            currentTerminal.sendText(`${processCmd} cli --sketch=${sketchName} --run`);
         }
     }
 
@@ -346,19 +296,24 @@ class RunManager {
 
         currentTerminal.show()
 
+        // Make sure the java command is properly quoted if it contains spaces
+        const javaCmd = / |\\/u.test(javaCommand) && !javaCommand.includes('"') 
+            ? `"${javaCommand}"` 
+            : javaCommand;
+        
         // If file is a processing project file
         if (hasTerminal && shouldSendSigint) {
             // First send SIGINT to stop any running process
             currentTerminal.sendText("\x03", false);
             // Then send the command separately
-            const execCommand = `${javaCommand} -jar ${pythonUtils.getJarFilename()} ${pythonUtils.getProjectFilename(
+            const execCommand = `${javaCmd} -jar ${pythonUtils.getJarFilename()} ${pythonUtils.getProjectFilename(
                 editor.document,
             )}`;
             // Use a separate command to execute the command after SIGINT
             currentTerminal.sendText(execCommand, true);
         } else {
             // No need to stop a running process, send the command directly
-            currentTerminal.sendText(`${javaCommand} -jar ${pythonUtils.getJarFilename()} ${pythonUtils.getProjectFilename(
+            currentTerminal.sendText(`${javaCmd} -jar ${pythonUtils.getJarFilename()} ${pythonUtils.getProjectFilename(
                 editor.document,
             )}`);
         }
