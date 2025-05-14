@@ -29,7 +29,7 @@ const createDiagnostic = (
 
     const diagnostic = new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Error)
 
-    diagnostic.code = "processing-java"
+    diagnostic.code = "processing"
 
     return diagnostic
 }

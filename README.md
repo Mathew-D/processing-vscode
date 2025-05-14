@@ -42,7 +42,7 @@ The [original extension](https://github.com/TobiahZ/processing-vscode) was missi
 -   Better syntax highlighting (from [Red Hat Java](https://github.com/redhat-developer/vscode-java/blob/master/syntaxes/java.tmLanguage.json))
 -   Documentation on hover (via Regex)
 -   A run button (both Processing Java and Processing Python)
--   Simple diagnostics (via the processing-java CLI, which can be extremely slow, and is disabled by default)
+-   Simple diagnostics (via the processing cli CLI, which can be extremely slow, and is disabled by default)
 -   Strings are auto closing and surrounding (didn't work in the old extension)
 
 See the [CHANGELOG](https://github.com/Luke-zhang-04/processing-vscode/blob/main/CHANGELOG.md) for all changes
@@ -101,10 +101,10 @@ Installing this extension will add the following commands to your command pallet
 
 This extension provides several configuration options that you can customize in your VS Code settings:
 
-- `processing.processingPath`: Path to Processing. Leave default if you've added processing to your path, otherwise enter the path to `processing-java`.
+- `processing.processingPath`: Path to Processing executable. For Processing 4+, the extension will automatically add 'cli' when needed. Just enter the path to the `processing` executable. Example: `/usr/bin/processing` for Unix, or `C:\\Program Files\\processing-4.0\\processing` for Windows.
 - `processing.docs`: Which documentation to use. Options: "processing.org", "p5js.org", "py.processing.org", or "auto".
 - `processing.search`: Search engine to use. Options: "Google" or "DuckDuckGo".
-- `processing.shouldGiveDiagnostics`: Whether to provide diagnostics (via processing-java). Disabled by default as it can be slow.
+- `processing.shouldGiveDiagnostics`: Whether to provide diagnostics (via processing cli). Disabled by default as it can be slow.
 - `processing.shouldSendSigint`: Whether to send interrupt signal to stop the current running process before starting a new one.
 - `processing.runPathQuotes`: When to quote the run path. Options: "auto" or "always".
 - `processing.py.jarPath`: Location of the processing-py.jar file.

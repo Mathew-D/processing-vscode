@@ -42,7 +42,7 @@ function getConfigValue<T>(
 }
 
 const getProcessingCommand = (): string => {
-    // Look for processing.processingPath, then processing.path, then default to processing-java
+    // Look for processing.processingPath, then processing.path, then default to processing
     const processingPath = vscode.workspace.getConfiguration().get<unknown>("processing.processingPath")
     const legacyPath = vscode.workspace.getConfiguration().get<unknown>("processing.path")
     
@@ -56,8 +56,8 @@ const getProcessingCommand = (): string => {
         return legacyPath
     }
     
-    // Default to processing-java
-    return "processing-java"
+    // Default to processing
+    return "processing"
 }
 
 const getJavaCommand = (): string => {

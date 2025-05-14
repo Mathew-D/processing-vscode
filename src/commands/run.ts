@@ -15,12 +15,46 @@ import path, {dirname} from "path"
 import {isValidProcessingProject} from "../utils"
 import vscode from "vscode"
 
+/**
+ * Ensures the processing command includes the 'cli' part
+ * @param command - The processing command from config
+ * @returns The command with 'cli' appended if needed
+ */
+const ensureProcessingCli = (command: string): string => {
+    // If the command is just "processing", append " cli"
+    if (command === "processing") {
+        return "processing cli";
+    }
+    
+    // If the command already contains "processing cli", return as is
+    if (command.includes("processing cli")) {
+        return command;
+    }
+    
+    // If it contains "processing" but not "cli", try to insert "cli" after "processing"
+    if (command.includes("processing")) {
+        // Handle paths with quotes
+        if (command.includes('"')) {
+            // For paths like "/path/to/processing" or "C:\path\to\processing"
+            return command.replace(/"([^"]*processing)("?)/, '"$1 cli$2');
+        }
+        // For paths without quotes
+        return command.replace(/(\S*processing)(\s|$)/, '$1 cli$2');
+    }
+    
+    // Default case: return the original command
+    return command;
+}
+
 // Helper function to validate required tools with user-friendly error messages
 const validateTool = async (command: string, toolName: string, configField: string): Promise<boolean> => {
     try {
+        // Ensure the command includes "processing cli"
+        const validatedCommand = ensureProcessingCli(command);
+        
         // Check if the command contains "processing cli" anywhere in it
         // This handles cases like "/path/to/processing cli" or "processing cli"
-        const isProcessingCli = command.includes("processing") && command.includes("cli");
+        const isProcessingCli = validatedCommand.includes("processing") && validatedCommand.includes("cli");
         
         await vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
@@ -39,29 +73,29 @@ const validateTool = async (command: string, toolName: string, configField: stri
                 let cmd;
                 let args;
                 
-                if (command.includes(' ')) {
+                if (validatedCommand.includes(' ')) {
                     // We need to be careful with paths that contain spaces
                     // If the command path has quotes, honor them
-                    if (command.includes('"')) {
-                        const match = command.match(/"([^"]+)"\s+(.*)/);
+                    if (validatedCommand.includes('"')) {
+                        const match = validatedCommand.match(/"([^"]+)"\s+(.*)/);
                         if (match) {
                             cmd = match[1]; // The part in quotes
                             args = (match[2] || '').split(' ').concat(['--help']);
                         } else {
                             // Fallback to simple split if quote parsing fails
-                            const parts = command.split(' ');
+                            const parts = validatedCommand.split(' ');
                             cmd = parts[0];
                             args = parts.slice(1).concat(['--help']);
                         }
                     } else {
                         // Simple space-separated command
-                        const parts = command.split(' ');
+                        const parts = validatedCommand.split(' ');
                         cmd = parts[0];
                         args = parts.slice(1).concat(['--help']);
                     }
                 } else {
                     // No spaces, simple command
-                    cmd = command;
+                    cmd = validatedCommand;
                     args = ['--help'];
                 }
                 
@@ -88,7 +122,7 @@ const validateTool = async (command: string, toolName: string, configField: stri
                     
                     proc.stderr.on('data', (data: Buffer) => {
                         output += data.toString();
-                        // Even stderr can be valid for processing-java help output
+                        // Even stderr can be valid for processing help output
                         if (output.includes('processing') || output.includes('Usage')) {
                             resolve();
                         }
@@ -192,7 +226,7 @@ class RunManager {
         })()
 
         if (processingMode === "java") {
-            // Validate processing-java command before attempting to run
+            // Validate processing command before attempting to run
             validateTool(processingCommand, "Processing", "processing.processingPath")
                 .then(isValid => {
                     if (isValid) {
@@ -267,10 +301,13 @@ class RunManager {
             )
         }
 
+        // Ensure the processing command includes 'cli'
+        const processCommand = ensureProcessingCli(processingCommand);
+
         // If file is a processing project file
         const cmd = `${
             hasTerminal && shouldSendSigint ? "\x03" : ""
-        }${processingCommand} --sketch=${sketchName} --run`
+        }${processCommand} --sketch=${sketchName} --run`
 
         currentTerminal.sendText(cmd)
     }

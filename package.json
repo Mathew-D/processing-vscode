@@ -149,8 +149,8 @@
       "properties": {
         "processing.processingPath": {
           "type": "string",
-          "default": "processing-java",
-          "description": "Path to Processing. Leave default if you've added processing to your path, otherwise enter the path to `processing-java` here. Example: `/usr/bin/processing-java` for Unix, or `C:\\Program Files\\processing-3.0.1\\processing-java` for Windows."
+          "default": "processing",
+          "description": "Path to Processing executable. For Processing 4+, the extension will automatically add 'cli' when needed. Just enter the path to the `processing` executable. Example: `/usr/bin/processing` for Unix, or `C:\\Program Files\\processing-4.0\\processing` for Windows."
         },
         "processing.docs": {
           "type": "string",
