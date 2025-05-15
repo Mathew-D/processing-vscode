@@ -10,7 +10,7 @@ import isValidProcessingCommand from "./validateCommand"
 import subscribeCommands from "./commands"
 import subscribeDiagnostics from "./diagnostics"
 import vscode from "vscode"
-import { disposeRunManager } from "./commands/run"
+import { disposeRunManager, clearValidationCache } from "./commands/run"
 import { statusBarManager } from "./statusBar"
 
 // Store disposables for cleanup on deactivation
@@ -27,6 +27,23 @@ export const activate = async (context: vscode.ExtensionContext) => {
     disposables.push(statusBarManager);
 
     subscribeCommands(context)
+
+    // Clear validation cache when configuration changes
+    const configListener = vscode.workspace.onDidChangeConfiguration((event) => {
+        // Check if relevant settings changed
+        if (
+            event.affectsConfiguration('processing.processingPath') ||
+            event.affectsConfiguration('processing.path') ||
+            event.affectsConfiguration('processing.py.javaPath') ||
+            event.affectsConfiguration('processing.py.jarPath')
+        ) {
+            log.appendLine("Processing configuration changed, clearing validation cache");
+            clearValidationCache();
+        }
+    });
+    
+    // Add to disposables
+    disposables.push(configListener);
 
     if (shouldEnableDiagnostics) {
         if (await isValidProcessingCommand(processingCommand)) {

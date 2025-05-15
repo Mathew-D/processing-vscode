@@ -15,6 +15,15 @@ import path, {dirname} from "path"
 import {isValidProcessingProject} from "../utils"
 import vscode from "vscode"
 
+// Cache validation results to avoid checking on every run, but allow rechecking when configs change
+let validationCache: Record<string, boolean> = {};
+
+// Function to clear the validation cache when configurations change
+export const clearValidationCache = (): void => {
+    validationCache = {};
+    console.log('Validation cache cleared due to configuration change');
+};
+
 /**
  * Helper function to properly handle paths with spaces in different operating systems
  * @param command - The command path
@@ -40,6 +49,14 @@ const formatCommandPath = (command: string): string => {
 
 // Helper function to validate required tools with user-friendly error messages
 const validateTool = async (command: string, toolName: string, configField: string): Promise<boolean> => {
+    // Create a cache key based on the command and toolName
+    const cacheKey = `${toolName}:${command}`;
+    
+    // If we already validated this command, return the cached result
+    if (validationCache[cacheKey] !== undefined) {
+        return validationCache[cacheKey];
+    }
+    
     try {
         // We'll validate the command by appending 'cli --help' for Processing
         // or just '--help' for other commands like Java
@@ -138,6 +155,8 @@ const validateTool = async (command: string, toolName: string, configField: stri
             });
         });
         
+        // Cache the successful result
+        validationCache[cacheKey] = true;
         return true;
     } catch (error) {
         console.error(`Tool validation failed: ${error}`);
@@ -149,6 +168,8 @@ const validateTool = async (command: string, toolName: string, configField: stri
             await vscode.commands.executeCommand('workbench.action.openSettings', configField);
         }
         
+        // Cache the failed result
+        validationCache[cacheKey] = false;
         return false;
     }
 };
