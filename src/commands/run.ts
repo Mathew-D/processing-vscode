@@ -264,22 +264,21 @@ class RunManager {
             )
         }
 
-        // Make sure the processing command is properly quoted if it contains spaces
-        const processCmd = / |\\/u.test(processingCommand) && !processingCommand.includes('"') 
-            ? `"${processingCommand}"` 
-            : processingCommand;
+        // For command building, avoid adding too many quotes that might cause shell parsing errors
+        // Simply append the 'cli' parameter directly
+        const fullCommand = `${processingCommand} cli --sketch=${sketchName} --run`;
+        
+        console.log(`Running processing command: ${fullCommand}`);
         
         // If file is a processing project file
         if (hasTerminal && shouldSendSigint) {
             // First send SIGINT to stop any running process
             currentTerminal.sendText("\x03", false);
-            // Then send the command separately with 'cli' added before --sketch
-            const execCommand = `${processCmd} cli --sketch=${sketchName} --run`;
-            // Use a separate command to execute the command after SIGINT
-            currentTerminal.sendText(execCommand, true);
+            // Then send the command separately
+            currentTerminal.sendText(fullCommand, true);
         } else {
-            // No need to stop a running process, send the command directly with 'cli' added
-            currentTerminal.sendText(`${processCmd} cli --sketch=${sketchName} --run`);
+            // No need to stop a running process, send the command directly
+            currentTerminal.sendText(fullCommand, true);
         }
     }
 
