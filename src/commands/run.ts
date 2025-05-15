@@ -15,6 +15,29 @@ import path, {dirname} from "path"
 import {isValidProcessingProject} from "../utils"
 import vscode from "vscode"
 
+/**
+ * Helper function to properly handle paths with spaces in different operating systems
+ * @param command - The command path
+ * @returns The properly quoted or escaped command path
+ */
+const formatCommandPath = (command: string): string => {
+    // If the command doesn't have spaces, return as is
+    if (!command.includes(' ')) {
+        return command;
+    }
+    
+    // Detect platform - Windows uses backslashes, others use forward slashes
+    const isWindows = process.platform === 'win32' || command.includes('\\');
+    
+    // If the command already contains quotes, don't add more
+    if (command.includes('"')) {
+        return command;
+    }
+    
+    // For any path with spaces (Windows or Linux), wrap in quotes
+    return `"${command}"`;
+}
+
 // Helper function to validate required tools with user-friendly error messages
 const validateTool = async (command: string, toolName: string, configField: string): Promise<boolean> => {
     try {
@@ -23,9 +46,7 @@ const validateTool = async (command: string, toolName: string, configField: stri
         const isProcessing = toolName === "Processing";
         
         // Handle spaces in the command path
-        const baseCommand = / |\\/u.test(command) && !command.includes('"') 
-            ? `"${command}"` 
-            : command;
+        const baseCommand = formatCommandPath(command);
             
         const validatedCommand = isProcessing ? `${baseCommand} cli` : baseCommand;
         
@@ -264,9 +285,11 @@ class RunManager {
             )
         }
 
-        // For command building, avoid adding too many quotes that might cause shell parsing errors
-        // Simply append the 'cli' parameter directly
-        const fullCommand = `${processingCommand} cli --sketch=${sketchName} --run`;
+        // Properly format the processing command path for the current OS
+        const processCmd = formatCommandPath(processingCommand);
+        
+        // Create the final command with cli separately added
+        const fullCommand = `${processCmd} cli --sketch=${sketchName} --run`;
         
         console.log(`Running processing command: ${fullCommand}`);
         
@@ -296,9 +319,7 @@ class RunManager {
         currentTerminal.show()
 
         // Make sure the java command is properly quoted if it contains spaces
-        const javaCmd = / |\\/u.test(javaCommand) && !javaCommand.includes('"') 
-            ? `"${javaCommand}"` 
-            : javaCommand;
+        const javaCmd = formatCommandPath(javaCommand);
         
         // If file is a processing project file
         if (hasTerminal && shouldSendSigint) {
